@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Hydra outputs
+outputs/
+multirun/
+
+# Data (если вы скачали CSV локально)
+data/
+*.csv
+*.parquet
+
+# Models
+*.pkl
+*.pt
+*.pth
+*.onnx
