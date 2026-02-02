@@ -1,0 +1,17 @@
+defaults:
+  - _self_
+
+# Секция оценки
+evaluation:
+  metrics: 
+    - accuracy
+    - log_loss
+    - roc_auc
+
+data:
+  method: gaussian
+  # ...
+
+model:
+  name: tabpfn-v2
+  # ...

@@ -1,0 +1,35 @@
+# --- Core Framework ---
+hydra-core>=1.3.0          # Управление конфигурациями
+omegaconf                  # Работа с YAML конфигами
+
+# --- Data Manipulation & Math ---
+numpy>=1.21.0
+pandas>=1.5.0
+scikit-learn>=1.0.0        # Метрики, сплиты, OpenML загрузчик
+
+# --- Target Model ---
+# Убедитесь, что это актуальная версия для v2. 
+# Если v2 в приватном доступе или бете, тут может быть ссылка на git.
+tabpfn>=2.0.0              
+
+# --- Generators: Traditional, VAE, GAN ---
+# SDV (Synthetic Data Vault) включает в себя CTGAN, TVAE и GaussianCopula
+sdv>=1.0.0                 
+
+# --- Generators: LLM based ---
+be-great                   # GReaT: Generation via Large Language Models
+transformers               # HuggingFace (нужен для GReaT)
+accelerate                 # Ускорение для LLM
+
+# --- Deep Learning Backend ---
+# PyTorch нужен для TabPFN, CTGAN и GReaT.
+torch>=2.0.0
+
+# --- Visualization & Analysis ---
+matplotlib
+seaborn
+tqdm                       # Прогресс-бары для долгих экспериментов
+
+# --- Development ---
+jupyter                    # Для работы с ноутбуками
+pytest                     # Для тестов
