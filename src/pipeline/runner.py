@@ -21,13 +21,15 @@ except ImportError:
     print("Warning: OpenMLDataLoader not found. Please implement it in src/data_loader/")
     OpenMLDataLoader = None
 
-# --- Imports: Generators ---
-from src.generators.wrapper_gaussian import GaussianCopulaGenerator
-from src.generators.wrapper_ctgan import CTGANGenerator
-from src.generators.wrapper_tvae import TVAEGenerator
-from src.generators.wrapper_gmm import GMMGenerator
-from src.generators.wrapper_mixed_model import MixedModelGenerator
-from src.generators.wrapper_tableaugmentation import TableAugmentationGenerator
+# --- Imports: Generators (каждая модель в своей папке: generators/<name>/model.py) ---
+from src.generators import (
+    GaussianCopulaGenerator,
+    CTGANGenerator,
+    TVAEGenerator,
+    GMMGenerator,
+    MixedModelGenerator,
+    TableAugmentationGenerator,
+)
 
 class ExperimentRunner:
     def __init__(self, cfg: DictConfig):

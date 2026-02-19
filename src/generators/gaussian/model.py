@@ -1,3 +1,4 @@
+"""Gaussian Copula — традиционная генеративная модель (SDV)."""
 import warnings
 from typing import Tuple
 import numpy as np
@@ -7,9 +8,8 @@ from pandas.api.types import CategoricalDtype
 from src.generators.base import BaseDataGenerator
 
 warnings.filterwarnings("ignore")
-
 from sdv.metadata import SingleTableMetadata
-from sdv.single_table import TVAESynthesizer
+from sdv.single_table import GaussianCopulaSynthesizer
 
 LABEL_COL = "target"
 
@@ -40,10 +40,20 @@ def _ensure_classes_presence(X_syn, y_syn, X_real, y_real):
     return syn_df.drop(columns=[LABEL_COL], errors="ignore"), syn_df[LABEL_COL]
 
 
-class TVAEGenerator(BaseDataGenerator):
-    """Генератор TVAE (VAE)"""
+class GaussianCopulaGenerator(BaseDataGenerator):
+    """Генератор на основе Gaussian Copula (SDV)."""
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> "TVAEGenerator":
+    def __init__(
+        self,
+        seed: int = 42,
+        n_samples: int = None,
+        **kwargs,
+    ):
+        super().__init__(seed=seed, n_samples=n_samples, **kwargs)
+        self.seed = seed
+        self.n_samples = n_samples
+
+    def fit(self, X: pd.DataFrame, y: pd.Series) -> "GaussianCopulaGenerator":
         self._train_df = X.copy()
         self._train_df[LABEL_COL] = y.values
         self._X_real = X
@@ -52,21 +62,20 @@ class TVAEGenerator(BaseDataGenerator):
         return self
 
     def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
-        n = n_samples or kwargs.get("n_samples") or self.params.get("n_samples") or len(self._train_df)
-        seed = self.params.get("seed", 42)
-        epochs = self.params.get("epochs", 300)
+        n = n_samples or kwargs.get("n_samples") or self.n_samples or len(self._train_df)
+        seed = self.params.get("seed", self.seed)
         np.random.seed(seed)
         df_ready = _fix_dtypes(self._train_df)
         try:
             metadata = SingleTableMetadata()
             metadata.detect_from_dataframe(df_ready)
-            model = TVAESynthesizer(metadata, epochs=epochs, verbose=False)
+            model = GaussianCopulaSynthesizer(metadata)
             model.fit(df_ready)
             synthetic_df = model.sample(num_rows=len(df_ready))
             X_syn = synthetic_df.drop(columns=[LABEL_COL], errors="ignore")
             y_syn = synthetic_df[LABEL_COL]
         except Exception as e:
-            print(f"  [TVAE Error] {e}. Fallback to bootstrap.")
+            print(f"  [Copula Error] {e}. Fallback to bootstrap.")
             s = self._train_df.sample(frac=1, replace=True).reset_index(drop=True)
             X_syn = s.drop(columns=[LABEL_COL])
             y_syn = s[LABEL_COL]

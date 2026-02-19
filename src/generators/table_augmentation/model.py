@@ -1,3 +1,4 @@
+"""Table Augmentation — аугментация таблицы (подвыборка признаков и сэмплов)."""
 from typing import Tuple
 import numpy as np
 import pandas as pd
@@ -38,7 +39,24 @@ def _generate_task_from_dataset(
 
 
 class TableAugmentationGenerator(BaseDataGenerator):
-    """Генератор TableAugmentation"""
+    """Генератор Table Augmentation."""
+
+    def __init__(
+        self,
+        seed: int = 42,
+        n_samples: int = None,
+        reuse_original_target: bool = True,
+        **kwargs,
+    ):
+        super().__init__(
+            seed=seed,
+            n_samples=n_samples,
+            reuse_original_target=reuse_original_target,
+            **kwargs,
+        )
+        self.seed = seed
+        self.n_samples = n_samples
+        self.reuse_original_target = reuse_original_target
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "TableAugmentationGenerator":
         self._train_df = X.copy()
@@ -49,9 +67,9 @@ class TableAugmentationGenerator(BaseDataGenerator):
         return self
 
     def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
-        n = n_samples or kwargs.get("n_samples") or self.params.get("n_samples") or len(self._train_df)
-        seed = self.params.get("seed", 42)
-        reuse_target = self.params.get("reuse_original_target", True)
+        n = n_samples or kwargs.get("n_samples") or self.n_samples or len(self._train_df)
+        seed = self.params.get("seed", self.seed)
+        reuse_target = self.params.get("reuse_original_target", self.reuse_original_target)
         df_synth = _generate_task_from_dataset(
             self._train_df,
             label=self._label,

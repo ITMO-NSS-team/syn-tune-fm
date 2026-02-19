@@ -1,3 +1,4 @@
+"""Mixed Model — BGM + случайный классификатор."""
 from typing import Tuple
 import numpy as np
 import pandas as pd
@@ -135,7 +136,17 @@ def _get_fitted_preprocessor(X: pd.DataFrame):
 
 
 class MixedModelGenerator(BaseDataGenerator):
-    """Генератор BGM + случайный классификатор"""
+    """Генератор BGM + случайный классификатор."""
+
+    def __init__(
+        self,
+        seed: int = 42,
+        n_samples: int = None,
+        **kwargs,
+    ):
+        super().__init__(seed=seed, n_samples=n_samples, **kwargs)
+        self.seed = seed
+        self.n_samples = n_samples
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "MixedModelGenerator":
         self._preprocessor, self._feature_names = _get_fitted_preprocessor(X)
@@ -148,8 +159,8 @@ class MixedModelGenerator(BaseDataGenerator):
         return self
 
     def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
-        n = n_samples or kwargs.get("n_samples") or self.params.get("n_samples") or len(self._X_proc)
-        seed = self.params.get("seed", 42)
+        n = n_samples or kwargs.get("n_samples") or self.n_samples or len(self._X_proc)
+        seed = self.params.get("seed", self.seed)
         rng = np.random.RandomState(seed)
         bgm_params = _sample_bgm_params(rng)
         clf = _sample_classifier(rng)
