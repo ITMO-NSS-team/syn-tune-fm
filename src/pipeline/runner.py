@@ -21,6 +21,12 @@ except ImportError:
     print("Warning: OpenMLDataLoader not found. Please implement it in src/data_loader/")
     OpenMLDataLoader = None
 
+try:
+    from src.data_loader.csv_loader import CSVDataLoader
+except ImportError:
+    print("Warning: CSVDataLoader not found. Please implement it in src/data_loader/")
+    CSVDataLoader = None
+
 # --- Imports: Generators ---
 # As you implement new generators (CTGAN, LLM, etc.), import them here.
 # from src.generators.wrapper_ctgan import CTGANGenerator
@@ -49,7 +55,11 @@ class ExperimentRunner:
                 raise ImportError("OpenMLDataLoader is not implemented or imported.")
             return OpenMLDataLoader(**params)
         
-        # Add other loaders here (e.g., LocalCSVLoader)
+        if name == 'csv':
+            if CSVDataLoader is None:
+                raise ImportError("CSVDataLoader is not implemented or imported.")
+            return CSVDataLoader(**params)
+        
         raise ValueError(f"Unknown dataset loader: {name}")
 
     def _get_generator(self):
