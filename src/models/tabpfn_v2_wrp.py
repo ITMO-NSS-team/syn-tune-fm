@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import joblib
+from pathlib import Path
 from typing import Dict, Any
 from tabpfn import TabPFNClassifier, TabPFNRegressor
 from tabpfn.finetuning.finetuned_classifier import FinetunedTabPFNClassifier
@@ -38,9 +39,9 @@ class TabPFNModelV2(BaseModelWrapper):
             )
             
         print("      [V2 Mode] Starting native Fine-Tuning loop...")
-        import os
-        os.makedirs("tabpfn_checkpoints", exist_ok=True)
-        self.model.fit(X, y, output_dir="tabpfn_checkpoints")
+        output_dir = Path("tabpfn_checkpoints")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        self.model.fit(X, y, output_dir=output_dir)
         self.is_fitted = True
 
     def fit_context(self, X: pd.DataFrame, y: pd.Series):
