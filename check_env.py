@@ -14,4 +14,3 @@ check_import("hydra")
 check_import("torch")
 check_import("pandas")
 check_import("tabpfn")
-check_import("tabtune") # Важно проверить, встал ли он через git

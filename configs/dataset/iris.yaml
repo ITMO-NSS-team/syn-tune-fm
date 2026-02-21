@@ -1,0 +1,6 @@
+name: openml
+params:
+  dataset_id: 61
+  target_column: "class"
+  test_size: 0.2
+  balance: true

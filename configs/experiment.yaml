@@ -1,5 +1,8 @@
 defaults:
   - _self_
+  - dataset: iris    
+  - generator: gaussian  
+  - model: tabpfn_v2        
 
 # Секция оценки
 evaluation:
@@ -7,11 +10,3 @@ evaluation:
     - accuracy
     - log_loss
     - roc_auc
-
-data:
-  method: gaussian
-  # ...
-
-model:
-  name: tabpfn-v2
-  # ...
