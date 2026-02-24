@@ -1,77 +1,75 @@
 ## 🔬 Research Framework: Synthetic Data for TabPFN Fine-Tuning
 
-Этот репозиторий предназначен для исследования влияния различных методов генерации синтетических данных на эффективность дообучения (fine-tuning) модели TabPFN.
+This repository studies how different synthetic data generation methods affect TabPFN fine-tuning.
 
-### 📂 Структура проекта
+### 📂 Project structure
 
-Проект построен по модульному принципу. Мы используем Hydra для управления конфигурациями, что позволяет менять методы генерации и датасеты без изменения кода.
+The project is modular and uses Hydra for configs, so you can switch generators and datasets without code changes.
 
 ``` plaintext
 .
-├── configs/                 # ⚙️ КОНФИГУРАЦИЯ (здесь мы управляем экспериментом)
-│   ├── dataset/             # Параметры загрузки данных (OpenML ID, target columns)
-│   ├── generator/           # Параметры генераторов (epochs, batch_size, model_type)
-│   ├── metrics/             # Какие метрики считать (accuracy, roc_auc, log_loss)
-│   ├── model/               # Параметры TabPFN (learning rate, steps)
-│   └── experiment.yaml      # Главный файл сборки эксперимента
+├── configs/                 # Configuration (experiment setup)
+│   ├── dataset/             # Data loading (OpenML ID, target column)
+│   ├── generator/           # Generator params (epochs, batch_size, etc.)
+│   ├── metrics/             # Metrics (accuracy, roc_auc, log_loss)
+│   ├── model/               # TabPFN params
+│   └── experiment.yaml      # Main experiment config
 │
-├── src/                     # 🧠 ИСХОДНЫЙ КОД
-│   ├── data_loader/         # Логика загрузки РЕАЛЬНЫХ данных
-│   │   ├── base.py          # Абстрактный класс
-│   │   └── openml_loader.py # Загрузчик с OpenML
+├── src/
+│   ├── data_loader/         # Real data loading
+│   │   ├── base.py          # Abstract loader
+│   │   └── openml_loader.py # OpenML loader
 │   │
-│   ├── generators/          # 🏭 ГЕНЕРАТОРЫ СИНТЕТИКИ (папка на модель, model.py + BaseDataGenerator)
-│   │   ├── base.py          # Базовый класс (fit -> generate)
+│   ├── generators/          # Synthetic generators (one folder per model, model.py + BaseDataGenerator)
+│   │   ├── base.py          # Base class (fit -> generate)
 │   │   ├── gaussian/        # Gaussian Copula
 │   │   ├── gmm/             # GMM
-│   │   ├── ctgan/           # CTGAN, tvae/ — TVAE, mixed_model/, table_augmentation/
+│   │   ├── ctgan/           # CTGAN; tvae/, mixed_model/, table_augmentation/
 │   │   └── ...
 │   │
-│   ├── models/              # Обертка над TabPFN
-│   ├── metrics/             # Расчет метрик качества
-│   └── pipeline/            # Склейка всего процесса (Load -> Gen -> Train -> Eval)
+│   ├── models/              # TabPFN wrapper
+│   ├── metrics/             # Metric computation
+│   └── pipeline/            # End-to-end (Load -> Gen -> Train -> Eval)
 │
-├── examples/                # Примеры (например, работа с генераторами)
-├── outputs/                 # 📊 Логи, веса моделей и результаты (создается Hydra)
-├── run_experiment.py        # 🚀 Точка входа
-└── requirements.txt         # Зависимости
+├── examples/                # Examples (e.g. generator usage)
+├── outputs/                 # Logs and results (created by Hydra)
+├── run_experiment.py        # Entry point
+└── requirements.txt         # Dependencies
 ```
 
-### 🛠 Как работать с кодом
-#### 1. Добавление нового генератора
+### 🛠 How to work with the code
+#### 1. Adding a new generator
 
-Если вы хотите протестировать новый метод (например, Diffusion Model):
+To add a new method (e.g. a Diffusion Model):
 
-1. Создайте папку `src/generators/diffusion/` и в ней файл `model.py` с классом, наследующим `BaseDataGenerator` (`src/generators/base.py`).
+1. Create a folder `src/generators/diffusion/` and add `model.py` with a class that inherits `BaseDataGenerator` (`src/generators/base.py`). Implement `fit(X, y)` to train and store the model; implement `generate(n_samples)` to sample only from the fitted model.
 
-2. Реализуйте методы `fit(X, y)` и `generate(n_samples)`.
+2. Export the class in `src/generators/__init__.py` and add a branch in `runner._get_generator()`. Add config `configs/generator/diffusion.yaml`.
 
-3. Добавьте экспорт в `src/generators/__init__.py` и ветку в `runner._get_generator()`. Создайте конфиг `configs/generator/diffusion.yaml`.
+**Example usage of generator classes:**  
+`examples/example_generators_usage.py` — run: `python examples/example_generators_usage.py`
 
-**Пример работы с классами генераторов:**  
-`examples/example_generators_usage.py` — запуск: `python examples/example_generators_usage.py`
+#### 2. Running experiments
 
-#### 2. Запуск экспериментов
+Change method via CLI without editing code:
 
-Не нужно менять код, чтобы сменить метод. Используйте аргументы командной строки:
-
-##### Запуск с дефолтными параметрами:
+##### Default run:
 
 ```bash
 python run_experiment.py
 ```
 
-##### Смена генератора на CTGAN:
+##### Switch generator to CTGAN:
 ```bash
 python run_experiment.py generator=ctgan
 ```
 
-##### Смена датасета и генератора:
+##### Change dataset and generator:
 ```bash
 python run_experiment.py dataset=diabetes generator=llm_great
 ```
 
-#### 3. Таксономия методов генерации данных (План)
+#### 3. Taxonomy of data generation methods (planned)
 * *Traditional*
 * *VAE*
 * *GAN*
