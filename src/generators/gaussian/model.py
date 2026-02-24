@@ -1,4 +1,3 @@
-"""Gaussian Copula — традиционная генеративная модель (SDV)."""
 import warnings
 from typing import Tuple
 import numpy as np
@@ -41,7 +40,7 @@ def _ensure_classes_presence(X_syn, y_syn, X_real, y_real):
 
 
 class GaussianCopulaGenerator(BaseDataGenerator):
-    """Генератор на основе Gaussian Copula (SDV)."""
+    """Gaussian Copula (SDV) generator."""
 
     def __init__(
         self,
@@ -52,33 +51,33 @@ class GaussianCopulaGenerator(BaseDataGenerator):
         super().__init__(seed=seed, n_samples=n_samples, **kwargs)
         self.seed = seed
         self.n_samples = n_samples
+        self._synthesizer = None
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "GaussianCopulaGenerator":
         self._train_df = X.copy()
         self._train_df[LABEL_COL] = y.values
         self._X_real = X
         self._y_real = y
-        self.is_fitted = True
-        return self
-
-    def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
-        n = n_samples or kwargs.get("n_samples") or self.n_samples or len(self._train_df)
-        seed = self.params.get("seed", self.seed)
-        np.random.seed(seed)
         df_ready = _fix_dtypes(self._train_df)
         try:
             metadata = SingleTableMetadata()
             metadata.detect_from_dataframe(df_ready)
-            model = GaussianCopulaSynthesizer(metadata)
-            model.fit(df_ready)
-            synthetic_df = model.sample(num_rows=len(df_ready))
-            X_syn = synthetic_df.drop(columns=[LABEL_COL], errors="ignore")
-            y_syn = synthetic_df[LABEL_COL]
+            self._synthesizer = GaussianCopulaSynthesizer(metadata)
+            self._synthesizer.fit(df_ready)
         except Exception as e:
-            print(f"  [Copula Error] {e}. Fallback to bootstrap.")
-            s = self._train_df.sample(frac=1, replace=True).reset_index(drop=True)
-            X_syn = s.drop(columns=[LABEL_COL])
-            y_syn = s[LABEL_COL]
+            raise RuntimeError(f"GaussianCopula fit failed: {e}") from e
+        self.is_fitted = True
+        return self
+
+    def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
+        if not self.is_fitted or self._synthesizer is None:
+            raise RuntimeError("Model is not fitted. Call fit() first.")
+        n = n_samples or kwargs.get("n_samples") or self.n_samples or len(self._train_df)
+        seed = self.params.get("seed", self.seed)
+        np.random.seed(seed)
+        synthetic_df = self._synthesizer.sample(num_rows=n)
+        X_syn = synthetic_df.drop(columns=[LABEL_COL], errors="ignore")
+        y_syn = synthetic_df[LABEL_COL]
         X_syn, y_syn = _ensure_classes_presence(X_syn, y_syn, self._X_real, self._y_real)
         if len(X_syn) > n:
             X_syn, y_syn = X_syn.iloc[:n], y_syn.iloc[:n]

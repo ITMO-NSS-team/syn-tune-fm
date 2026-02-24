@@ -1,4 +1,3 @@
-"""Gaussian Mixture Model — генератор на основе GMM."""
 import random
 from typing import Tuple
 import numpy as np
@@ -11,7 +10,7 @@ LABEL_COL = "target"
 
 
 class GMMGenerator(BaseDataGenerator):
-    """Генератор на основе Gaussian Mixture Model."""
+    """GMM-based generator."""
 
     def __init__(
         self,
@@ -32,42 +31,46 @@ class GMMGenerator(BaseDataGenerator):
         )
         self.seed = seed
         self.n_samples = n_samples
-        self.n_components = n_components  # None = случайный выбор при generate
+        self.n_components = n_components
         self.covariance_type = covariance_type
         self.reg_covar = reg_covar
+        self._gmm = None
+        self._full_data = None
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "GMMGenerator":
         self._X = X
         self._y = y
         self._feature_names = X.columns.tolist()
+        full_data = X.copy()
+        full_data[LABEL_COL] = y.values
+        self._full_data = full_data
+        n_components = self.n_components
+        if n_components is None:
+            random.seed(self.seed)
+            n_components = random.randint(2, min(12, len(X) // 10 + 2))
+        try:
+            self._gmm = GaussianMixture(
+                n_components=n_components,
+                covariance_type=self.covariance_type,
+                random_state=self.seed,
+                reg_covar=self.reg_covar,
+            )
+            self._gmm.fit(full_data)
+        except Exception as e:
+            raise RuntimeError(f"GMM fit failed: {e}") from e
         self.is_fitted = True
         return self
 
     def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
+        if not self.is_fitted or self._gmm is None:
+            raise RuntimeError("Model is not fitted. Call fit() first.")
         n = n_samples or kwargs.get("n_samples") or self.n_samples or len(self._X)
         seed = self.params.get("seed", self.seed)
         np.random.seed(seed)
-        random.seed(seed)
-        full_data = self._X.copy()
-        full_data[LABEL_COL] = self._y.values
-        n_components = self.n_components
-        if n_components is None:
-            n_components = random.randint(2, min(12, len(self._X) // 10 + 2))
-        try:
-            gmm = GaussianMixture(
-                n_components=n_components,
-                covariance_type=self.covariance_type,
-                random_state=seed,
-                reg_covar=self.reg_covar,
-            )
-            gmm.fit(full_data)
-            X_syn_np, _ = gmm.sample(n)
-            synthetic_df = pd.DataFrame(X_syn_np, columns=full_data.columns)
-        except Exception as e:
-            print(f"  [GMM Error] {e}. Fallback to bootstrap.")
-            synthetic_df = full_data.sample(n=n, replace=True).reset_index(drop=True)
+        X_syn_np, _ = self._gmm.sample(n)
+        synthetic_df = pd.DataFrame(X_syn_np, columns=self._full_data.columns)
         for col in synthetic_df.columns:
-            min_v, max_v = full_data[col].min(), full_data[col].max()
+            min_v, max_v = self._full_data[col].min(), self._full_data[col].max()
             synthetic_df[col] = synthetic_df[col].clip(min_v, max_v).round().astype(int)
         y_synthetic = synthetic_df[LABEL_COL]
         X_synthetic = synthetic_df.drop(columns=[LABEL_COL])[self._feature_names]

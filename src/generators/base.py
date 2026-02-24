@@ -3,48 +3,49 @@ from typing import Tuple
 import pandas as pd
 import numpy as np
 
+
 class BaseDataGenerator(ABC):
     """
-    Интерфейс для всех методов генерации синтетических данных.
+    Interface for all synthetic data generation methods.
     """
 
     def __init__(self, **kwargs):
         """
         Args:
-            **kwargs: Параметры генератора (epochs, batch_size и т.д.),
-                     передаваемые через Hydra.
+            **kwargs: Generator parameters (epochs, batch_size, etc.), e.g. from Hydra config.
         """
         self.params = kwargs
         self.is_fitted = False
 
     @abstractmethod
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> 'BaseDataGenerator':
+    def fit(self, X: pd.DataFrame, y: pd.Series) -> "BaseDataGenerator":
         """
-        Обучение генератора на реальных данных.
-        
+        Train the generator on real data. Must fit the underlying model and store it.
+
         Args:
-            X (pd.DataFrame): Матрица признаков.
-            y (pd.Series): Целевая переменная.
+            X: Feature matrix.
+            y: Target variable.
         """
         pass
 
     @abstractmethod
-    def generate(self, n_samples: int) -> Tuple[pd.DataFrame, pd.Series]:
+    def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
         """
-        Генерация синтетических данных.
+        Sample synthetic data from the fitted model. Must not perform training.
 
         Args:
-            n_samples (int): Количество сэмплов для генерации.
+            n_samples: Number of samples to generate (may use default from init if None).
+            **kwargs: Optional overrides (e.g. n_samples).
 
         Returns:
-            Tuple[pd.DataFrame, pd.Series]: (X_synthetic, y_synthetic)
+            (X_synthetic, y_synthetic)
         """
         pass
 
     def save(self, path: str):
-        """Метод для сохранения состояния генератора."""
+        """Optional: save generator state."""
         pass
-    
+
     def load(self, path: str):
-        """Метод для загрузки состояния генератора."""
+        """Optional: load generator state."""
         pass

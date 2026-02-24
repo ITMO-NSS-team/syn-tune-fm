@@ -1,4 +1,3 @@
-"""Mixed Model — BGM + случайный классификатор."""
 from typing import Tuple
 import numpy as np
 import pandas as pd
@@ -136,7 +135,7 @@ def _get_fitted_preprocessor(X: pd.DataFrame):
 
 
 class MixedModelGenerator(BaseDataGenerator):
-    """Генератор BGM + случайный классификатор."""
+    """BGM + random classifier."""
 
     def __init__(
         self,
@@ -147,6 +146,8 @@ class MixedModelGenerator(BaseDataGenerator):
         super().__init__(seed=seed, n_samples=n_samples, **kwargs)
         self.seed = seed
         self.n_samples = n_samples
+        self._bgm = None
+        self._clf = None
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "MixedModelGenerator":
         self._preprocessor, self._feature_names = _get_fitted_preprocessor(X)
@@ -155,36 +156,35 @@ class MixedModelGenerator(BaseDataGenerator):
             columns=self._feature_names,
         )
         self._y = y
+        rng = np.random.RandomState(self.seed)
+        bgm_params = _sample_bgm_params(rng)
+        self._clf = _sample_classifier(rng)
+        try:
+            self._bgm = BayesianGaussianMixture(**bgm_params, random_state=self.seed)
+            self._bgm.fit(self._X_proc)
+            self._clf.fit(self._X_proc, self._y)
+        except Exception as e:
+            raise RuntimeError(f"MixedModel fit failed: {e}") from e
         self.is_fitted = True
         return self
 
     def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
+        if not self.is_fitted or self._bgm is None or self._clf is None:
+            raise RuntimeError("Model is not fitted. Call fit() first.")
         n = n_samples or kwargs.get("n_samples") or self.n_samples or len(self._X_proc)
         seed = self.params.get("seed", self.seed)
-        rng = np.random.RandomState(seed)
-        bgm_params = _sample_bgm_params(rng)
-        clf = _sample_classifier(rng)
-        try:
-            bgm = BayesianGaussianMixture(**bgm_params, random_state=seed)
-            bgm.fit(self._X_proc)
-        except Exception:
-            idx = rng.choice(len(self._X_proc), n, replace=True)
-            return self._X_proc.iloc[idx].reset_index(drop=True), self._y.iloc[idx].values
-        try:
-            clf.fit(self._X_proc, self._y)
-        except Exception:
-            idx = rng.choice(len(self._X_proc), n, replace=True)
-            return self._X_proc.iloc[idx].reset_index(drop=True), self._y.iloc[idx].values
-        X_syn_np, _ = bgm.sample(n_samples=n)
+        np.random.seed(seed)
+        X_syn_np, _ = self._bgm.sample(n_samples=n)
         X_syn_df = pd.DataFrame(X_syn_np, columns=self._feature_names)
-        y_syn = clf.predict(X_syn_df)
+        y_syn = self._clf.predict(X_syn_df)
         if len(np.unique(y_syn)) < 2:
+            rng = np.random.RandomState(seed)
             idx = rng.choice(len(self._X_proc), n, replace=True)
             return self._X_proc.iloc[idx].reset_index(drop=True), self._y.iloc[idx].values
         return X_syn_df, y_syn
 
     def get_preprocessor(self):
-        """Для оценки на тесте — тот же препроцессинг. Возвращает (preprocessor, feature_names) или None."""
+        """Return (preprocessor, feature_names) for evaluation; None if not fitted."""
         if getattr(self, "_preprocessor", None) is None:
             return None
         return self._preprocessor, self._feature_names

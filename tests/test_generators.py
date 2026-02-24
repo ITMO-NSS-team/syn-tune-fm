@@ -107,6 +107,15 @@ def test_generators_accept_params_dict(sample_data):
     assert len(X_syn) == 10
 
 
+def test_generate_without_fit_raises():
+    """generate() must not be called before fit(); same contract as CatRepBench."""
+    from src.generators import GMMGenerator
+    import pytest
+    gen = GMMGenerator(seed=42, n_components=2)
+    with pytest.raises(RuntimeError, match="not fitted"):
+        gen.generate(n_samples=10)
+
+
 def test_runner_factory_resolves_generators():
     from omegaconf import OmegaConf
     from src.pipeline.runner import ExperimentRunner

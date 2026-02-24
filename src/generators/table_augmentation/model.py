@@ -1,4 +1,3 @@
-"""Table Augmentation — аугментация таблицы (подвыборка признаков и сэмплов)."""
 from typing import Tuple
 import numpy as np
 import pandas as pd
@@ -39,7 +38,7 @@ def _generate_task_from_dataset(
 
 
 class TableAugmentationGenerator(BaseDataGenerator):
-    """Генератор Table Augmentation."""
+    """Table augmentation: fit() stores data; generate() only samples (bootstrap + feature subset)."""
 
     def __init__(
         self,
@@ -67,6 +66,8 @@ class TableAugmentationGenerator(BaseDataGenerator):
         return self
 
     def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
+        if not self.is_fitted:
+            raise RuntimeError("Model is not fitted. Call fit() first.")
         n = n_samples or kwargs.get("n_samples") or self.n_samples or len(self._train_df)
         seed = self.params.get("seed", self.seed)
         reuse_target = self.params.get("reuse_original_target", self.reuse_original_target)
@@ -83,5 +84,5 @@ class TableAugmentationGenerator(BaseDataGenerator):
         return X_syn, y_syn
 
     def get_selected_columns(self):
-        """Колонки признаков после последнего generate(); для оценки на тесте — тот же поднабор."""
+        """Feature columns used in the last generate(); use same subset for evaluation."""
         return getattr(self, "_selected_columns", None)
