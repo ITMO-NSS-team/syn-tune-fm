@@ -31,21 +31,21 @@ class TrainingLoop:
             X_train, y_train = augmenter.mix(X_train, y_train, X_real, y_real)
 
         if self.tuning_mode == "sft":
-            # Проверяем, с какой версией модели мы работаем
+            # Check which version of the model we are working with
             is_v2 = self.model.__class__.__name__ == 'TabPFNModelV2'
             
             if is_v2:
                 print(">>> Triggering Native TabPFN V2 SFT...")
                 epochs = self.config.get('ft_epochs', 10)
-                # Значение 1e-9 слишком мало для реального дообучения, ставим 1e-5
+                # The value 1e-9 is too small for actual fine-tuning, setting it to 1e-5
                 lr = self.config.get('ft_learning_rate', 1e-5) 
-                # Делегируем SFT нативному методу обертки
+                # Delegate SFT to the wrapper's native method
                 self.model.fine_tune(X_train, y_train, epochs=epochs, learning_rate=lr)
                 
             else:
                 print(">>> Triggering Pure PyTorch SFT for V1...")
                 self._run_pytorch_loop(X_train, y_train)
-                # Обязательная загрузка контекста после обновления весов
+                # Context loading is mandatory after updating weights
                 self.model.fit_context(X_train, y_train)
                 
         elif self.tuning_mode == "icl":
@@ -65,11 +65,11 @@ class TrainingLoop:
 
         # 1. Setup Data
         epochs = self.config.get('ft_epochs', 10)
-        # ИСПРАВЛЕНИЕ: дефолтный LR 1e-9 был слишком мал, меняем на 1e-5
+        # FIX: The default LR of 1e-9 was too small, changing to 1e-5
         lr = self.config.get('ft_learning_rate', 1e-5) 
         batch_size = self.config.get('ft_batch_size', 128)
 
-        # ПРОВЕРКА: Если это V2, используем её собственный препроцессор
+        # CHECK: If this is V2, use its own preprocessor
         is_v2 = hasattr(self.model, 'prepare_v2_dataloader')
         
         if is_v2:
@@ -117,23 +117,23 @@ class TrainingLoop:
         for epoch in range(epochs):
             epoch_loss = 0.0
             
-            # Внимание: теперь итерируемся по универсальному batch
+            # Attention: now iterating over a generic batch
             for batch in dataloader:
                 optimizer.zero_grad()
                 
-                # РАЗВЕТВЛЕНИЕ LOGIC: V1 vs V2
+                # BRANCHING LOGIC: V1 vs V2
                 if is_v2:
-                    # TabPFN v2 ожидает словарь (один аргумент)
+                    # TabPFN v2 expects a dictionary (one argument)
                     logits, targets = self.model.forward_pass(batch)
                     targets = targets.to(self.device).long()
                 elif hasattr(self.model, 'forward_pass'):
-                    # TabPFN v1 ожидает X и y (два аргумента)
+                    # TabPFN v1 expects X and y (two arguments)
                     batch_X, batch_y = batch
                     if batch_X.shape[0] < 2:
-                        continue # Пропускаем батчи из 1 элемента
+                        continue # Skip batches of 1 element
                     logits, targets = self.model.forward_pass(batch_X, batch_y)
                 else:
-                    # Универсальный fallback для других моделей
+                    # Universal fallback for other models
                     batch_X, batch_y = batch
                     logits = pytorch_model(batch_X)
                     targets = batch_y
@@ -145,7 +145,7 @@ class TrainingLoop:
                 
                 epoch_loss += loss.item()
                 
-            # Защита от деления на ноль, если генератор вернет 0 батчей
+            # Protection against division by zero if generator returns 0 batches
             num_batches = max(1, len(list(dataloader)) if is_v2 else len(dataloader))
             avg_loss = epoch_loss / num_batches
             print(f"      Epoch {epoch+1}/{epochs} | Loss: {avg_loss:.4f}")

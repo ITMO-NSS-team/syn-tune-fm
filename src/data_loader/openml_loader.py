@@ -10,11 +10,11 @@ class OpenMLDataLoader(BaseDataLoader):
                  random_state: int = 42, balance: bool = False):
         """
         Args:
-            dataset_id: ID датасета на OpenML.
-            target_column: Имя целевой колонки.
-            test_size: Размер тестовой выборки.
-            random_state: Сид для воспроизводимости.
-            balance: Если True, делает undersampling мажоритарного класса в TRAIN выборке.
+            dataset_id: OpenML dataset ID.
+            target_column: Target column name.
+            test_size: Test set size.
+            random_state: Seed for reproducibility.
+            balance: If True, performs undersampling of the majority class in the TRAIN set.
         """
         super().__init__(target_column)
         self.dataset_id = dataset_id
@@ -33,19 +33,19 @@ class OpenMLDataLoader(BaseDataLoader):
         X = data.data
         y = data.target
         
-        # Убедимся, что y - это Series, а X - DataFrame без y.
+        # Ensure y is a Series and X is a DataFrame without y.
         if self.target_column in X.columns:
              y = X[self.target_column]
              X = X.drop(columns=[self.target_column])
         
-        # Приводим y к кодам классов (0..N-1)
+        # Convert y to class codes (0..N-1)
         if y.dtype == 'object' or str(y.dtype) == 'category':
              y = y.astype('category').cat.codes
 
-        # Важно: Присваиваем имя явно, чтобы не потерять его
+        # Important: Assign the name explicitly so as not to lose it
         y.name = self.target_column
 
-        # Сначала делим на Train/Test (Test должен оставаться реальным и несбалансированным)
+        # First split into Train/Test (Test should remain real and unbalanced)
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=self.test_size, random_state=self.random_state, stratify=y
         )
@@ -59,16 +59,16 @@ class OpenMLDataLoader(BaseDataLoader):
 
     def _balance_data(self, X, y):
         """
-        Простой Undersampling мажоритарного класса до размера миноритарного.
+        Simple undersampling of the majority class to the size of the minority class.
         """
-        # 1. Гарантируем, что у Series есть имя перед объединением
+        # 1. Ensure the Series has a name before concatenating
         target_col = y.name if y.name else "target"
         y = y.rename(target_col)
         
-        # 2. Объединяем X и y в один DataFrame
+        # 2. Concatenate X and y into a single DataFrame
         train_data = pd.concat([X, y], axis=1)
         
-        # 3. Считаем распределение классов
+        # 3. Calculate class distribution
         class_counts = train_data[target_col].value_counts()
         min_class_count = class_counts.min()
         
@@ -79,7 +79,7 @@ class OpenMLDataLoader(BaseDataLoader):
         for label in class_counts.index:
             df_class = train_data[train_data[target_col] == label]
             
-            # Если примеров больше чем минимум, делаем resample (срезаем лишнее)
+            # If there are more examples than the minimum, resample (cut off excess)
             if len(df_class) > min_class_count:
                 df_class = resample(
                     df_class, 
@@ -89,12 +89,12 @@ class OpenMLDataLoader(BaseDataLoader):
                 )
             balanced_dfs.append(df_class)
             
-        # Собираем обратно
+        # Put back together
         balanced_data = pd.concat(balanced_dfs)
-        # Перемешиваем строки
+        # Shuffle the rows
         balanced_data = balanced_data.sample(frac=1, random_state=self.random_state)
         
-        # Разделяем обратно на X и y
+        # Split back into X and y
         y_balanced = balanced_data[target_col]
         X_balanced = balanced_data.drop(columns=[target_col])
         

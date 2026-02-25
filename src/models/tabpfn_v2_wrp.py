@@ -22,7 +22,7 @@ class TabPFNModelV2(BaseModelWrapper):
 
     def fine_tune(self, X: pd.DataFrame, y: pd.Series, epochs: int = 10, learning_rate: float = 1e-5):
         """
-        Использует нативный механизм дообучения (SFT) из новых версий TabPFN.
+        Uses the native fine-tuning mechanism (SFT) from newer versions of TabPFN.
         """
         print(f"      [V2 Mode] Initializing native FinetunedTabPFN on {self.device}...")
         if self.task_type == 'regression':
@@ -45,7 +45,7 @@ class TabPFNModelV2(BaseModelWrapper):
         self.is_fitted = True
 
     def fit_context(self, X: pd.DataFrame, y: pd.Series):
-        """Обычное ICL-обучение без изменения весов"""
+        """Standard ICL training without changing weights"""
         print(f"Starting TabPFN V2 ICL (Context Loading) on {len(X)} samples...")
         if self.task_type == 'regression':
             self.model = TabPFNRegressor(device=self.device, n_estimators=self.n_estimators)
