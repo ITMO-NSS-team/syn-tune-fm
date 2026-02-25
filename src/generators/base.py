@@ -5,15 +5,15 @@ import numpy as np
 
 class BaseDataGenerator(ABC):
     """
-    Интерфейс для всех методов генерации синтетических данных.
-    Обеспечивает взаимозаменяемость методов в пайплайне.
+    Interface for all synthetic data generation methods.
+    Ensures interchangeability of methods in the pipeline.
     """
 
     def __init__(self, **kwargs):
         """
         Args:
-            **kwargs: Параметры генератора (epochs, batch_size и т.д.),
-                     передаваемые через Hydra.
+            **kwargs: Generator parameters (epochs, batch_size, etc.),
+                     passed through Hydra.
         """
         self.params = kwargs
         self.is_fitted = False
@@ -21,21 +21,21 @@ class BaseDataGenerator(ABC):
     @abstractmethod
     def fit(self, X: pd.DataFrame, y: pd.Series) -> 'BaseDataGenerator':
         """
-        Обучение генератора на реальных данных.
+        Train the generator on real data.
         
         Args:
-            X (pd.DataFrame): Матрица признаков.
-            y (pd.Series): Целевая переменная.
+            X (pd.DataFrame): Feature matrix.
+            y (pd.Series): Target variable.
         """
         pass
 
     @abstractmethod
     def generate(self, n_samples: int) -> Tuple[pd.DataFrame, pd.Series]:
         """
-        Генерация синтетических данных.
+        Generate synthetic data.
 
         Args:
-            n_samples (int): Количество сэмплов для генерации.
+            n_samples (int): Number of samples to generate.
 
         Returns:
             Tuple[pd.DataFrame, pd.Series]: (X_synthetic, y_synthetic)
@@ -43,9 +43,9 @@ class BaseDataGenerator(ABC):
         pass
 
     def save(self, path: str):
-        """Метод для сохранения состояния генератора (опционально)."""
+        """Method to save the state of the generator (optional)."""
         pass
     
     def load(self, path: str):
-        """Метод для загрузки состояния генератора (опционально)."""
+        """Method to load the state of the generator (optional)."""
         pass

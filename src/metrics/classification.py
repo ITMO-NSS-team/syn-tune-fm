@@ -22,9 +22,9 @@ class RocAucMetric(BaseMetric):
         if y_probs is None:
             raise ValueError("ROC AUC requires probabilities (y_probs)")
         
-        # Обработка бинарной/мультиклассовой классификации
+        # Handle binary/multi-class classification
         if y_probs.shape[1] == 2:
-             # Для бинарной берем вероятность позитивного класса
+             # For binary, take the probability of the positive class
              return roc_auc_score(y_true, y_probs[:, 1])
         else:
              return roc_auc_score(y_true, y_probs, multi_class=self.multi_class)
