@@ -21,6 +21,18 @@ except ImportError:
     print("Warning: OpenMLDataLoader not found. Please implement it in src/data_loader/")
     OpenMLDataLoader = None
 
+try:
+    from src.data_loader.csv_loader import CSVDataLoader
+except ImportError:
+    print("Warning: CSVDataLoader not found. Please implement it in src/data_loader/")
+    CSVDataLoader = None
+
+# --- Imports: Generators ---
+# As you implement new generators (CTGAN, LLM, etc.), import them here.
+# from src.generators.wrapper_ctgan import CTGANGenerator
+# from src.generators.wrapper_llm import GreatLLMGenerator
+# from src.generators.wrapper_gaussian import GaussianCopulaGenerator
+
 class ExperimentRunner:
     def __init__(self, cfg: DictConfig):
         self.cfg = cfg
@@ -39,6 +51,11 @@ class ExperimentRunner:
             if OpenMLDataLoader is None:
                 raise ImportError("OpenMLDataLoader is not implemented or imported.")
             return OpenMLDataLoader(**params)
+        
+        if name == 'csv':
+            if CSVDataLoader is None:
+                raise ImportError("CSVDataLoader is not implemented or imported.")
+            return CSVDataLoader(**params)
         
         raise ValueError(f"Unknown dataset loader: {name}")
 
