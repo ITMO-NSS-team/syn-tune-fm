@@ -1,0 +1,5 @@
+name: tvae
+params:
+  n_samples: 100
+  epochs: 300
+  seed: 42

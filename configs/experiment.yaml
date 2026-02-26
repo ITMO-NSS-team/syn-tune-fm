@@ -6,7 +6,7 @@ defaults:
 
 # Секция оценки
 evaluation:
-  metrics: 
+  metrics:
     - accuracy
     - log_loss
     - roc_auc

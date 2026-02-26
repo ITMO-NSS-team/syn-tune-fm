@@ -3,6 +3,7 @@ from typing import Tuple
 import pandas as pd
 import numpy as np
 
+
 class BaseDataGenerator(ABC):
     """
     Interface for all synthetic data generation methods.
@@ -19,7 +20,7 @@ class BaseDataGenerator(ABC):
         self.is_fitted = False
 
     @abstractmethod
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> 'BaseDataGenerator':
+    def fit(self, X: pd.DataFrame, y: pd.Series) -> "BaseDataGenerator":
         """
         Train the generator on real data.
         
@@ -30,7 +31,7 @@ class BaseDataGenerator(ABC):
         pass
 
     @abstractmethod
-    def generate(self, n_samples: int) -> Tuple[pd.DataFrame, pd.Series]:
+    def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
         """
         Generate synthetic data.
 
@@ -38,14 +39,14 @@ class BaseDataGenerator(ABC):
             n_samples (int): Number of samples to generate.
 
         Returns:
-            Tuple[pd.DataFrame, pd.Series]: (X_synthetic, y_synthetic)
+            (X_synthetic, y_synthetic)
         """
         pass
 
     def save(self, path: str):
         """Method to save the state of the generator (optional)."""
         pass
-    
+
     def load(self, path: str):
         """Method to load the state of the generator (optional)."""
         pass
