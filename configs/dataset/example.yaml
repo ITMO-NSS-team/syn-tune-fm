@@ -1,0 +1,6 @@
+name: csv
+params:
+  train_path: "data/example.csv"
+  target_column: "target"
+  test_size: 0.2
+  balance: false

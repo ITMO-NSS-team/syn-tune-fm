@@ -1,0 +1,9 @@
+name: tabpfn_v2
+params:
+  device: "mps" 
+  n_estimators: 1
+  fit_mode: 'batched'
+  max_data_size: 200
+  ft_epochs: 10
+  ft_learning_rate: 1e-5
+  task_type: "classification"

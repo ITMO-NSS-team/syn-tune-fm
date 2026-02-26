@@ -5,8 +5,8 @@ from typing import Dict, Any
 
 class BaseModelWrapper(ABC):
     """
-    Абстрактная обертка для любой модели (TabPFN, XGBoost, CatBoost).
-    Скрывает различия в API библиотек.
+    Abstract wrapper for any model (TabPFN, XGBoost, CatBoost).
+    Hides the differences in external library APIs.
     """
 
     def __init__(self, params: Dict[str, Any]):
@@ -14,33 +14,39 @@ class BaseModelWrapper(ABC):
         self.model = None
 
     @abstractmethod
-    def fit(self, X: pd.DataFrame, y: pd.Series):
+    def fine_tune(self, X: pd.DataFrame, y: pd.Series, **kwargs):
         """
-        Запуск обучения (или fine-tuning) модели.
+        Gradient-based or incremental fine-tuning of existing weights.
+        """
+        pass
+
+    @abstractmethod
+    def fit_context(self, X: pd.DataFrame, y: pd.Series):
+        """
+        In-Context Learning (ICL) without updating model weights.
         """
         pass
 
     @abstractmethod
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """
-        Возвращает жесткие метки классов (0, 1, 2...).
+        Returns hard class labels.
         """
         pass
 
     @abstractmethod
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
         """
-        Возвращает вероятности классов.
-        Критично для расчета LogLoss и ROC-AUC.
+        Returns class probabilities (required for LogLoss, ROC-AUC).
         """
         pass
 
     @abstractmethod
     def save(self, path: str):
-        """Сохранение весов модели на диск."""
+        """Saves model weights to disk."""
         pass
     
     @abstractmethod
     def load(self, path: str):
-        """Загрузка весов модели с диска."""
+        """Loads model weights from disk."""
         pass

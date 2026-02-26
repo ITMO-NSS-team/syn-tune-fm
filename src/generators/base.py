@@ -7,12 +7,14 @@ import numpy as np
 class BaseDataGenerator(ABC):
     """
     Interface for all synthetic data generation methods.
+    Ensures interchangeability of methods in the pipeline.
     """
 
     def __init__(self, **kwargs):
         """
         Args:
-            **kwargs: Generator parameters (epochs, batch_size, etc.), e.g. from Hydra config.
+            **kwargs: Generator parameters (epochs, batch_size, etc.),
+                     passed through Hydra.
         """
         self.params = kwargs
         self.is_fitted = False
@@ -20,22 +22,21 @@ class BaseDataGenerator(ABC):
     @abstractmethod
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "BaseDataGenerator":
         """
-        Train the generator on real data. Must fit the underlying model and store it.
-
+        Train the generator on real data.
+        
         Args:
-            X: Feature matrix.
-            y: Target variable.
+            X (pd.DataFrame): Feature matrix.
+            y (pd.Series): Target variable.
         """
         pass
 
     @abstractmethod
     def generate(self, n_samples: int = None, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
         """
-        Sample synthetic data from the fitted model. Must not perform training.
+        Generate synthetic data.
 
         Args:
-            n_samples: Number of samples to generate (may use default from init if None).
-            **kwargs: Optional overrides (e.g. n_samples).
+            n_samples (int): Number of samples to generate.
 
         Returns:
             (X_synthetic, y_synthetic)
@@ -43,9 +44,9 @@ class BaseDataGenerator(ABC):
         pass
 
     def save(self, path: str):
-        """Optional: save generator state."""
+        """Method to save the state of the generator (optional)."""
         pass
 
     def load(self, path: str):
-        """Optional: load generator state."""
+        """Method to load the state of the generator (optional)."""
         pass

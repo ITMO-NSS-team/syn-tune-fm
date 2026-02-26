@@ -9,7 +9,7 @@ class MetricFactory:
 
     @staticmethod
     def get_metrics(metric_names: list):
-        """Возвращает список инициализированных классов метрик"""
+        """Returns a list of initialized metric classes"""
         metrics = []
         for name in metric_names:
             if name not in MetricFactory._registry:

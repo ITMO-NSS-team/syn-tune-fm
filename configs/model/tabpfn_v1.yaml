@@ -1,0 +1,8 @@
+name: tabpfn_v1
+params:
+  device: "mps" 
+  N_ensemble_configurations: 4 
+  ft_epochs: 10
+  ft_learning_rate: 1e-5
+  ft_batch_size: 128
+  ft_trainable_layers: 2
