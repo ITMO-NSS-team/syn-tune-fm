@@ -6,6 +6,7 @@ from src.generators.ctgan import CTGANGenerator
 from src.generators.tvae import TVAEGenerator
 from src.generators.mixed_model import MixedModelGenerator
 from src.generators.table_augmentation import TableAugmentationGenerator
+from src.generators.diffusion import TabularDiffusionGenerator
 
 __all__ = [
     "BaseDataGenerator",
@@ -15,4 +16,5 @@ __all__ = [
     "GMMGenerator",
     "MixedModelGenerator",
     "TableAugmentationGenerator",
+    "TabularDiffusionGenerator",
 ]
