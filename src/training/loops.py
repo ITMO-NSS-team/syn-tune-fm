@@ -4,7 +4,7 @@ import pandas as pd
 from typing import Dict, Any
 
 from src.models.base import BaseModelWrapper
-from src.training.augmentation import DataAugmenter
+# from training.balancing import DataBalancer
 from src.training.objectives import ObjectivesHelper
 
 class TrainingLoop:
@@ -17,7 +17,9 @@ class TrainingLoop:
         
         self.tuning_mode = self.config.get("tuning_mode", "sft")
         self.mix_real = self.config.get("mix_real_data", False)
-        self.device = self.config.get("device", "cpu")
+        
+        # Inherit device from model (which has robust 'auto' detection)
+        self.device = getattr(self.model, 'device', self.config.get("device", "cpu"))
         
         # Inject the ObjectivesHelper to control loss functions
         self.objectives = ObjectivesHelper(device=self.device)
@@ -26,9 +28,9 @@ class TrainingLoop:
         """
         Executes the training process.
         """
-        if self.mix_real and X_real is not None and y_real is not None:
-            augmenter = DataAugmenter(strategy="concat")
-            X_train, y_train = augmenter.mix(X_train, y_train, X_real, y_real)
+        # if self.mix_real and X_real is not None and y_real is not None:
+        #     augmenter = DataBalancer(strategy="concat")
+        #     X_train, y_train = augmenter.mix(X_train, y_train, X_real, y_real)
 
         if self.tuning_mode == "sft":
             # Check which version of the model we are working with
