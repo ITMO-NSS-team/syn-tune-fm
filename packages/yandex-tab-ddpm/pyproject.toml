@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yandex-tab-ddpm"
+version = "0.0.0"
+description = "Installable `tab_ddpm` from yandex-research/tab-ddpm (vendored; refresh: python scripts/refresh_tab_ddpm_vendor.py)."
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.21",
+    "torch>=2.0",
+]
+
+[project.urls]
+Upstream = "https://github.com/yandex-research/tab-ddpm"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tab_ddpm*"]

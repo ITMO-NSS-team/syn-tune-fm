@@ -32,14 +32,14 @@ def run_generator(name: str, gen: BaseDataGenerator, X: pd.DataFrame, y: pd.Seri
     print(f"  [{name}] fit + generate(n={n_syn})...")
     gen.fit(X, y)
     X_syn, y_syn = gen.generate(n_samples=n_syn)
-    print(f"  [{name}] получено: X_syn {X_syn.shape}, y_syn {y_syn.shape}")
+    print(f"  [{name}] got: X_syn {X_syn.shape}, y_syn {y_syn.shape}")
     return X_syn, y_syn
 
 
 def main():
-    print("=== Пример работы с классами генеративных моделей ===\n")
+    print("=== Generator classes demo ===\n")
     X, y = make_dummy_data(n_samples=200, n_features=5)
-    print(f"Обучающие данные: X {X.shape}, y {y.shape}\n")
+    print(f"Train: X {X.shape}, y {y.shape}\n")
 
     generators = [
         ("GaussianCopula", GaussianCopulaGenerator(seed=42, n_samples=100)),
@@ -54,16 +54,16 @@ def main():
         try:
             run_generator(name, gen, X, y, n_syn=80)
         except Exception as e:
-            print(f"  [{name}] ошибка: {e}")
+            print(f"  [{name}] error: {e}")
         print()
 
-    print("Пример с конфигом из словаря (как в Hydra):")
+    print("Hydra-style dict config:")
     params = {"seed": 123, "n_samples": 50, "n_components": 3}
     gmm = GMMGenerator(**params)
     gmm.fit(X, y)
     X_syn, y_syn = gmm.generate(n_samples=50)
     print(f"  GMM(**(params)) -> X_syn {X_syn.shape}, y_syn {y_syn.shape}")
-    print("\nГотово.")
+    print("\nDone.")
 
 
 if __name__ == "__main__":

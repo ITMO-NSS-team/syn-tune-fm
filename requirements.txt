@@ -25,6 +25,11 @@ accelerate                 # Ускорение для LLM
 # PyTorch нужен для TabPFN, CTGAN и GReaT.
 torch>=2.0.0
 
+# --- TabDDPM: модуль `tab_ddpm` (yandex-research/tab-ddpm) ---
+# Апстрим не публикует pip-пакет; у нас — обёртка packages/yandex-tab-ddpm (vendored tab_ddpm/).
+# Обновить исходники с GitHub: python scripts/refresh_tab_ddpm_vendor.py
+-e ./packages/yandex-tab-ddpm
+
 # --- Visualization & Analysis ---
 matplotlib
 seaborn

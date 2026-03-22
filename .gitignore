@@ -1,5 +1,9 @@
+# TabDDPM vendor script temp clone
+_tab_ddpm_src/
+
 # Python
 __pycache__/
+*.egg-info/
 *.py[cod]
 .venv/
 
