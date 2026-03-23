@@ -33,30 +33,25 @@ class TabPFNModelV2(BaseModelWrapper):
         self.is_fitted = False
         self.model = None
 
-    def fine_tune(self, X: pd.DataFrame, y: pd.Series, epochs: int = 8, learning_rate: float = 1e-4,
-                  weight_decay: float = 0.01, grad_clip_value: float = 1.0,
-                  early_stopping: bool = True, early_stopping_patience: int = 3,
-                  min_delta: float = 0.001, **kwargs):
-        """Fine-tuning (SFT) via TabPFN."""
+    def fine_tune(self, X: pd.DataFrame, y: pd.Series, epochs: int = 10, learning_rate: float = 1e-5):
+        """
+        Uses the native fine-tuning mechanism (SFT) from newer versions of TabPFN.
+        """
         print(f"      [V2 Mode] Initializing native FinetunedTabPFN on {self.device}...")
-        ft_params = {
-            "device": self.device,
-            "epochs": epochs,
-            "learning_rate": learning_rate,
-            "weight_decay": weight_decay,
-            "grad_clip_value": grad_clip_value,
-            "early_stopping": early_stopping,
-            "early_stopping_patience": early_stopping_patience,
-            "min_delta": min_delta,
-        }
-        ft_params.update(kwargs)
-        
         if self.task_type == 'regression':
-            self.model = FinetunedTabPFNRegressor(**ft_params)
+            self.model = FinetunedTabPFNRegressor(
+                device=self.device, 
+                epochs=epochs, 
+                learning_rate=learning_rate
+            )
         else:
-            self.model = FinetunedTabPFNClassifier(**ft_params)
-        
-        print(f"      [V2 Mode] Fine-Tuning (epochs={epochs}, lr={learning_rate}, wd={weight_decay})...")
+            self.model = FinetunedTabPFNClassifier(
+                device=self.device, 
+                epochs=epochs, 
+                learning_rate=learning_rate
+            )
+            
+        print("      [V2 Mode] Starting native Fine-Tuning loop...")
         
         # FIX: checkpoint bleeding defense
         run_id = uuid.uuid4().hex[:8]
@@ -67,10 +62,10 @@ class TabPFNModelV2(BaseModelWrapper):
             self.model.fit(X, y, output_dir=output_dir)
         finally:
             shutil.rmtree(output_dir, ignore_errors=True)
+            # Only empty cache if device is mps and backend is available
             if self.device == "mps" and torch.backends.mps.is_available():
                 torch.mps.empty_cache()
-        
-        print(f"      [V2 Mode] Fine-tuning complete!")
+                
         self.is_fitted = True
 
     def fit_context(self, X: pd.DataFrame, y: pd.Series):
