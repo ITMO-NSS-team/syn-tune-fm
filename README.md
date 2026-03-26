@@ -32,10 +32,22 @@ The project is modular and uses Hydra for configs, so you can switch generators 
 │   └── pipeline/            # End-to-end (Load -> Gen -> Train -> Eval)
 │
 ├── examples/                # Examples (e.g. generator usage)
+├── packages/
+│   └── yandex-tab-ddpm/     # Pip-installable `tab_ddpm` (vendored from yandex-research/tab-ddpm)
 ├── outputs/                 # Logs and results (created by Hydra)
 ├── run_experiment.py        # Entry point
-└── requirements.txt         # Dependencies
+└── requirements.txt         # Dependencies (includes `-e ./packages/yandex-tab-ddpm`)
 ```
+
+### 🐍 Environment
+
+From the repo root, in a virtualenv:
+
+```bash
+pip install -r requirements.txt
+```
+
+This installs PyPI deps plus **`yandex-tab-ddpm`** (editable), which provides `import tab_ddpm` for `TabDDPMGenerator`. To refresh vendored sources from upstream: `python scripts/refresh_tab_ddpm_vendor.py`, then re-run `pip install -e ./packages/yandex-tab-ddpm`.
 
 ### 🛠 How to work with the code
 #### 1. Adding a new generator

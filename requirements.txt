@@ -6,6 +6,7 @@ omegaconf                  # Работа с YAML конфигами
 numpy>=1.21.0
 pandas>=1.5.0
 scikit-learn>=1.0.0        # Метрики, сплиты, OpenML загрузчик
+optuna>=3.0.0              # Подбор гиперпараметров генераторов (Wasserstein)
 
 # --- Target Model ---
 tabpfn>=2.0.0
@@ -23,6 +24,11 @@ accelerate                 # Ускорение для LLM
 # --- Deep Learning Backend ---
 # PyTorch нужен для TabPFN, CTGAN и GReaT.
 torch>=2.0.0
+
+# --- TabDDPM: модуль `tab_ddpm` (yandex-research/tab-ddpm) ---
+# Апстрим не публикует pip-пакет; у нас — обёртка packages/yandex-tab-ddpm (vendored tab_ddpm/).
+# Обновить исходники с GitHub: python scripts/refresh_tab_ddpm_vendor.py
+-e ./packages/yandex-tab-ddpm
 
 # --- Visualization & Analysis ---
 matplotlib

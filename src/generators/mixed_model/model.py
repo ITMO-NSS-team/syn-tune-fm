@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Any, Dict, Optional, Tuple
 import numpy as np
 import pandas as pd
 from sklearn.mixture import BayesianGaussianMixture
@@ -11,7 +11,9 @@ from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
-from src.generators.base import BaseDataGenerator
+from src.generators.base import BaseDataGenerator, train_subset_from_conditions
+
+LABEL_COL = "target"
 
 
 def _sample_bgm_params(rng):
@@ -127,10 +129,8 @@ def _get_fitted_preprocessor(X: pd.DataFrame):
         sparse_threshold=0,
     )
     preprocessor.fit(X)
-    try:
-        feature_names = preprocessor.get_feature_names_out().tolist()
-    except AttributeError:
-        feature_names = num_cols + cat_cols
+    fn_out = getattr(preprocessor, "get_feature_names_out", None)
+    feature_names = fn_out().tolist() if callable(fn_out) else (num_cols + cat_cols)
     return preprocessor, feature_names
 
 
@@ -150,21 +150,19 @@ class MixedModelGenerator(BaseDataGenerator):
         self._clf = None
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "MixedModelGenerator":
+        self._X_fit = X.reset_index(drop=True)
         self._preprocessor, self._feature_names = _get_fitted_preprocessor(X)
         self._X_proc = pd.DataFrame(
             self._preprocessor.transform(X),
             columns=self._feature_names,
         )
-        self._y = y
+        self._y = y.reset_index(drop=True)
         rng = np.random.RandomState(self.seed)
         bgm_params = _sample_bgm_params(rng)
         self._clf = _sample_classifier(rng)
-        try:
-            self._bgm = BayesianGaussianMixture(**bgm_params, random_state=self.seed)
-            self._bgm.fit(self._X_proc)
-            self._clf.fit(self._X_proc, self._y)
-        except Exception as e:
-            raise RuntimeError(f"MixedModel fit failed: {e}") from e
+        self._bgm = BayesianGaussianMixture(**bgm_params, random_state=self.seed)
+        self._bgm.fit(self._X_proc)
+        self._clf.fit(self._X_proc, self._y)
         self.is_fitted = True
         return self
 
@@ -181,6 +179,62 @@ class MixedModelGenerator(BaseDataGenerator):
             rng = np.random.RandomState(seed)
             idx = rng.choice(len(self._X_proc), n, replace=True)
             return self._X_proc.iloc[idx].reset_index(drop=True), self._y.iloc[idx].values
+        return X_syn_df, y_syn
+
+    def conditional_sampling(
+        self,
+        n_samples: int,
+        target_value: Optional[int] = None,
+        feature_conditions: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Tuple[pd.DataFrame, pd.Series]:
+        return super().conditional_sampling(
+            n_samples,
+            target_value=target_value,
+            feature_conditions=feature_conditions,
+            **kwargs,
+        )
+
+    def _generate_conditional(
+        self,
+        n_samples: int,
+        target_value: Optional[int] = None,
+        feature_conditions: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Tuple[pd.DataFrame, pd.Series]:
+        fc = dict(feature_conditions or {})
+        if not fc and target_value is None:
+            return self.generate(n_samples, **kwargs)
+        if not self.is_fitted:
+            raise RuntimeError("Model is not fitted. Call fit() first.")
+
+        train_df = self._X_fit.copy()
+        train_df[LABEL_COL] = self._y.values
+        sub = train_subset_from_conditions(
+            train_df,
+            target_value=target_value,
+            feature_conditions=fc,
+            label_col=LABEL_COL,
+        )
+        X_class = self._X_proc.loc[sub.index]
+        if len(X_class) == 0:
+            raise ValueError(
+                "No training rows match target_value=%r and feature_conditions=%r"
+                % (target_value, fc)
+            )
+
+        seed = self.params.get("seed", self.seed)
+        rng = np.random.RandomState(seed)
+        bgm_params = _sample_bgm_params(rng)
+        class_bgm = BayesianGaussianMixture(**bgm_params, random_state=seed)
+        class_bgm.fit(X_class)
+        X_syn_np, _ = class_bgm.sample(n_samples=n_samples)
+
+        X_syn_df = pd.DataFrame(X_syn_np, columns=self._feature_names)
+        if target_value is not None:
+            y_syn = pd.Series([target_value] * n_samples)
+        else:
+            y_syn = self._clf.predict(X_syn_df)
         return X_syn_df, y_syn
 
     def get_preprocessor(self):

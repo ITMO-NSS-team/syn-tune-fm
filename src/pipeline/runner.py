@@ -35,6 +35,8 @@ from src.generators import (
     GMMGenerator,
     MixedModelGenerator,
     TableAugmentationGenerator,
+    TabularDiffusionGenerator,
+    TabDDPMGenerator,
 )
 
 class ExperimentRunner:
@@ -78,8 +80,12 @@ class ExperimentRunner:
             return MixedModelGenerator(**params)
         elif name == "tableaugmentation":
             return TableAugmentationGenerator(**params)
+        elif name == "diffusion":
+            return TabularDiffusionGenerator(**params)
+        elif name == "tabddpm":
+            return TabDDPMGenerator(**params)
         raise ValueError(
-            f"Generator '{name}' is not implemented. Choose: gaussian, ctgan, tvae, gmm, mixed_model, tableaugmentation."
+            f"Generator '{name}' is not implemented. Choose: gaussian, ctgan, tvae, gmm, mixed_model, tableaugmentation, diffusion, tabddpm."
         )
 
     def _get_model(self):

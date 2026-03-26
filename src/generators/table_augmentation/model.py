@@ -1,10 +1,35 @@
-from typing import Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from src.generators.base import BaseDataGenerator
+from src.generators.base import (
+    BaseDataGenerator,
+    enforce_feature_conditions_on_X,
+    train_subset_from_conditions,
+)
 
 LABEL_COL = "target"
+
+
+def _pick_augmentation_features(
+    feature_cols: List[str],
+    rng: np.random.RandomState,
+    required_cols: Optional[List[str]] = None,
+) -> List[str]:
+    """Random feature fraction; required_cols are always included."""
+    required = list(required_cols or [])
+    if len(feature_cols) > 1:
+        frac = rng.uniform(0.5, 1.0)
+        n_keep = int(np.ceil(len(feature_cols) * frac))
+        n_keep = max(1, min(n_keep, len(feature_cols)))
+        pool = list(feature_cols)
+        selected = rng.choice(pool, size=n_keep, replace=False).tolist()
+        for c in required:
+            if c not in selected:
+                selected.append(c)
+    else:
+        selected = list(feature_cols)
+    return selected
 
 
 def _generate_task_from_dataset(
@@ -81,6 +106,61 @@ class TableAugmentationGenerator(BaseDataGenerator):
         self._selected_columns = [c for c in df_synth.columns if c != self._label]
         X_syn = df_synth[self._selected_columns]
         y_syn = df_synth[self._label]
+        return X_syn, y_syn
+
+    def conditional_sampling(
+        self,
+        n_samples: int,
+        target_value: Optional[int] = None,
+        feature_conditions: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Tuple[pd.DataFrame, pd.Series]:
+        return super().conditional_sampling(
+            n_samples,
+            target_value=target_value,
+            feature_conditions=feature_conditions,
+            **kwargs,
+        )
+
+    def _generate_conditional(
+        self,
+        n_samples: int,
+        target_value: Optional[int] = None,
+        feature_conditions: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Tuple[pd.DataFrame, pd.Series]:
+        fc = dict(feature_conditions or {})
+        if not fc and target_value is None:
+            return self.generate(n_samples, **kwargs)
+        if not self.is_fitted:
+            raise RuntimeError("Model is not fitted. Call fit() first.")
+
+        class_data = train_subset_from_conditions(
+            self._train_df,
+            target_value=target_value,
+            feature_conditions=fc,
+            label_col=LABEL_COL,
+        )
+
+        seed = self.params.get("seed", self.seed)
+        rng = np.random.RandomState(seed)
+
+        idx = rng.choice(len(class_data), size=n_samples, replace=True)
+        df_subset = class_data.iloc[idx].reset_index(drop=True)
+
+        feature_cols = [c for c in class_data.columns if c != LABEL_COL]
+        cond_cols = [c for c in fc if c != LABEL_COL and c in feature_cols] if fc else None
+        selected_features = _pick_augmentation_features(
+            feature_cols, rng, required_cols=cond_cols
+        )
+
+        self._selected_columns = selected_features
+        X_syn = df_subset[selected_features]
+        y_syn = df_subset[LABEL_COL]
+        if fc:
+            X_syn = enforce_feature_conditions_on_X(X_syn, fc, label_col=LABEL_COL)
+        if target_value is not None:
+            y_syn = pd.Series([target_value] * len(X_syn), name=LABEL_COL)
         return X_syn, y_syn
 
     def get_selected_columns(self):
