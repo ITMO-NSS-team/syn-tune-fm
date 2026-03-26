@@ -11,16 +11,16 @@ from src.pipeline.runner import ExperimentRunner
 
 def plot_experiment_results(results: dict, cfg: DictConfig, shared_dir: Path):
     """
-    Создает и сохраняет столбчатые диаграммы для каждой метрики.
+    Creates and saves bar charts for each metric.
     """
     metrics = cfg.evaluation.metrics
     variants = list(results.keys())
     
-    # Создаем папку plots в ОБЩЕЙ директории мультирана (с таймстемпом)
+    # Create plots folder in the SHARED multirun directory (with timestamp)
     plots_dir = shared_dir / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
     
-    # Получаем значение дисбаланса для имени файла
+    # Get imbalance value for the filename
     minority_frac = cfg.get("minority_fraction", "null")
     
     for metric in metrics:
@@ -56,7 +56,7 @@ def plot_experiment_results(results: dict, cfg: DictConfig, shared_dir: Path):
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         plt.tight_layout()
         
-        # Уникальное имя файла, чтобы графики мультирана не перезаписывали друг друга!
+        # Unique filename so that multirun plots don't overwrite each other!
         plot_path = plots_dir / f"{metric}_mf_{minority_frac}.png"
         plt.savefig(str(plot_path), dpi=300)
         plt.close()
@@ -65,11 +65,11 @@ def plot_experiment_results(results: dict, cfg: DictConfig, shared_dir: Path):
 
 @hydra.main(version_base=None, config_path="configs", config_name="experiment")
 def main(cfg: DictConfig):
-    # 1. Запуск эксперимента
+    # 1. Start experiment
     runner = ExperimentRunner(cfg)
     results = runner.run()
 
-    # --- ОПРЕДЕЛЯЕМ ОБЩУЮ ПАПКУ ДЛЯ ТЕКУЩЕГО ЗАПУСКА (С ТАЙМСТЕМПОМ) ---
+    # --- DEFINE SHARED FOLDER FOR CURRENT RUN (WITH TIMESTAMP) ---
     hydra_cfg = HydraConfig.get()
     output_dir = Path(hydra_cfg.runtime.output_dir)
     
@@ -78,11 +78,11 @@ def main(cfg: DictConfig):
     else:
         shared_exp_dir = output_dir
 
-    # 2. Генерируем графики в общую папку
+    # 2. Generate plots in the shared folder
     print("\n[5/5] Generating Visualizations...")
     plot_experiment_results(results, cfg, shared_exp_dir)
 
-    # 3. Собираем параметры текущего запуска
+    # 3. Collect parameters of the current run
     row = {
         "dataset": cfg.dataset.name,
         "generator": cfg.generator.name,
@@ -90,7 +90,7 @@ def main(cfg: DictConfig):
         "minority_fraction": cfg.get("minority_fraction", "None"), 
     }
     
-    # 4. Распаковываем результаты по вариантам
+    # 4. Unpack results by variants
     if isinstance(results, dict):
         for variant, metrics in results.items(): 
             for metric_name, val in metrics.items():
@@ -98,11 +98,11 @@ def main(cfg: DictConfig):
 
     df = pd.DataFrame([row])
 
-    # 5. Сохраняем локальный CSV чисто для этого запуска (в папку с таймстемпом)
+    # 5. Save local CSV specifically for this run (in folder with timestamp)
     local_csv = shared_exp_dir / "run_results.csv"
     df.to_csv(str(local_csv), mode='a', header=not local_csv.exists(), index=False)
 
-    # 6. Сохраняем глобальный CSV для истории (в корень проекта)
+    # 6. Save global CSV for history (in project root)
     orig_cwd = Path(get_original_cwd())
     global_csv = orig_cwd / "all_experiments_results.csv"
     df.to_csv(str(global_csv), mode='a', header=not global_csv.exists(), index=False)
